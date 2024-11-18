@@ -1,0 +1,241 @@
+replicaCount: 1
+
+image:
+  repository: 992382670521.dkr.ecr.us-east-1.amazonaws.com/tacbot-backend
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+  # port: 8081
+
+nameOverride: ""
+fullnameOverride: ""
+
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::992382670521:role/tacbotinc-eks-role
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "tacbot-backend"
+
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: 
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  runAsUser: 1000
+
+awsSecrets: 
+  - name: tacbot-backend
+    keys:
+      - M1_DB_HOST
+      - M1_DB_PORT
+      - M1_DB_USER
+      - M1_DB_PASS
+      - M1_DB_NAME
+      - KRATOS_ADMIN_URL
+      - S3_AWS_REGION
+      - S3_UPLOAD_BUCKET
+      - FRONTEND_URL
+      - USER_NAME
+      - USER_PASSWORD
+      - EMAILUSERNAME
+      - EMAILPASSWORD
+      - EMAILHOSTNAME
+      - EMAILPORT
+      - FROMEMAIL
+      - ORY_HOST
+      - TEST_EMAILS
+      - ORG_DOMAIN
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+
+secretKeys:
+  - name: M1_DB_HOST
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: M1_DB_HOST
+  - name: M1_DB_PORT
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: M1_DB_PORT
+  - name: M1_DB_USER
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: M1_DB_USER
+  - name: M1_DB_PASS
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: M1_DB_PASS
+  - name: M1_DB_NAME
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: M1_DB_NAME
+  - name: KRATOS_ADMIN_URL
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: KRATOS_ADMIN_URL
+  - name: S3_AWS_REGION
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: S3_AWS_REGION
+  - name: S3_UPLOAD_BUCKET
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: S3_UPLOAD_BUCKET
+  - name: FRONTEND_URL
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: FRONTEND_URL
+  - name: USER_NAME
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: USER_NAME
+  - name: USER_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: USER_PASSWORD
+  - name: EMAILUSERNAME
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: EMAILUSERNAME
+  - name: EMAILPASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: EMAILPASSWORD
+  - name: EMAILHOSTNAME
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: EMAILHOSTNAME
+  - name: EMAILPORT
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: EMAILPORT
+  - name: FROMEMAIL
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: FROMEMAIL
+  - name: ORY_HOST
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: ORY_HOST
+  - name: TEST_EMAILS
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: TEST_EMAILS
+  - name: ORG_DOMAIN
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: ORG_DOMAIN
+  - name: AWS_ACCESS_KEY_ID
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: AWS_ACCESS_KEY_ID
+  - name: AWS_SECRET_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: tacbot-backend
+        key: AWS_SECRET_ACCESS_KEY        
+    
+  
+
+service:
+  type: ClusterIP
+  port: 8081
+
+# Enable Ingress
+ingress:
+  enabled: true  # Enable Ingress
+  className: "alb"  # Use AWS ALB ingress controller
+  annotations:
+    alb.ingress.kubernetes.io/group.name: tacbot
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/auth-session-cookie: AWSALB
+    alb.ingress.kubernetes.io/healthcheck-path: /v1/health
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/tags: "kubernetes.io/role/elb=tacbot"
+    alb.ingress.kubernetes.io/listen-ports: '[ {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/subnets: "subnet-01af89fc94cc7417e,subnet-0e2d4df7b24919951"
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:992382670521:certificate/f9da1938-f144-4927-869e-1393d20ca562
+  hosts:
+  - host: dev.tacbot.ai
+    paths:
+      - path: /v1/
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port: 8081
+  tls: [] 
+
+resources: 
+  limits:
+    cpu: "300m"
+    memory: 400Mi
+  requests:
+    cpu: "200m"
+    memory: 200Mi
+
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+volumes: 
+  - name: secrets-store-inline
+    csi:
+      driver: secrets-store.csi.k8s.io
+      readOnly: true
+      volumeAttributes:
+        secretProviderClass: secret-tacbot
+volumeMounts: 
+  - name: secrets-store-inline
+    mountPath: "/mnt/secrets-store"
+    readOnly: true
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+env: {}
